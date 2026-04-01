@@ -35,7 +35,7 @@ export default function TaskItem({
   const [editando, setEditando] = useState(false)
   const [notaExpandida, setNotaExpandida] = useState(false)
 
-  const priorCfg = PRIORIDADE_CONFIG[tarefa.prioridade]
+  const priorCfg = PRIORIDADE_CONFIG[tarefa.prioridade] ?? PRIORIDADE_CONFIG['media']
   const borderColor = tarefa.concluida ? 'var(--border-dim)' : priorCfg.cor
 
   return (
