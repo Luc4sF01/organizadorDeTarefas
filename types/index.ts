@@ -36,6 +36,33 @@ export interface NovaTarefa {
   recorrente?: boolean
 }
 
+export interface CategoriaEstudo {
+  id: string
+  nome: string
+  cor: string
+  created_at: string
+}
+
+export interface RegistroEstudo {
+  id: string
+  titulo: string
+  categoria_id: string | null
+  duracao_minutos: number
+  confianca: 1 | 2 | 3
+  anotacao: string | null
+  estudado_em: string
+  created_at: string
+}
+
+export interface Revisao {
+  id: string
+  registro_id: string
+  revisar_em: string
+  concluida: boolean
+  created_at: string
+  registros_estudo?: { titulo: string; categoria_id: string | null }
+}
+
 export interface MesAno {
   mes: number
   ano: number
