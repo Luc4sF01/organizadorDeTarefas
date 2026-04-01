@@ -144,7 +144,7 @@ export default function EstudosPage() {
               value={form.anotacao}
               onChange={e => setForm(f => ({ ...f, anotacao: e.target.value }))}
               placeholder="Anotação (opcional)"
-              rows={2}
+              rows={4}
               className="w-full bg-transparent text-xs text-tx-3 placeholder:text-tx-5 outline-none border border-bd rounded-lg px-3 py-2 focus:border-accent transition-colors resize-none"
             />
 
@@ -268,7 +268,7 @@ function RegistroItem({
           value={form.anotacao}
           onChange={e => setForm(f => ({ ...f, anotacao: e.target.value }))}
           placeholder="Anotação (opcional)"
-          rows={2}
+          rows={4}
           className="w-full bg-transparent text-xs text-tx-3 placeholder:text-tx-5 outline-none border border-bd rounded-lg px-3 py-2 focus:border-accent transition-colors resize-none"
         />
         <div className="flex gap-2">
@@ -313,7 +313,7 @@ function RegistroItem({
             )}
           </div>
           {expandido && registro.anotacao && (
-            <p className="mt-2 text-xs text-tx-3 leading-relaxed border-l-2 border-bd-hi pl-2 animate-slide-down">
+            <p className="mt-2 text-xs text-tx-3 leading-relaxed border-l-2 border-bd-hi pl-2 animate-slide-down whitespace-pre-wrap">
               {registro.anotacao}
             </p>
           )}
