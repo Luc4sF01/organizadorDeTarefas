@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import { Tarefa, PRIORIDADE_CONFIG } from '@/types'
 import ConfirmModal from './ConfirmModal'
 import TaskModal from './TaskModal'
+import { useSubtarefas } from '@/hooks/useSubtarefas'
 
 interface TaskItemProps {
   tarefa: Tarefa
@@ -34,8 +35,12 @@ export default function TaskItem({
   const [confirmando, setConfirmando] = useState(false)
   const [editando, setEditando] = useState(false)
   const [notaExpandida, setNotaExpandida] = useState(false)
+  const [subExpandida, setSubExpandida] = useState(false)
+  const [novaSubtarefa, setNovaSubtarefa] = useState('')
 
   const priorCfg = PRIORIDADE_CONFIG[tarefa.prioridade] ?? PRIORIDADE_CONFIG['media']
+
+  const { subtarefas, carregando: carregandoSubs, adicionar, alternarConcluida: alternarSub, excluir: excluirSub } = useSubtarefas(tarefa.id, subExpandida)
   const borderColor = tarefa.concluida ? 'var(--border-dim)' : priorCfg.cor
 
   return (
@@ -158,7 +163,73 @@ export default function TaskItem({
                   {notaExpandida ? 'ocultar nota' : 'ver nota'}
                 </button>
               )}
+              <button
+                onClick={() => setSubExpandida(s => !s)}
+                className="flex items-center gap-1 text-[10px] text-tx-5 hover:text-tx-3 transition-colors cursor-pointer"
+              >
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="8" y1="6" x2="21" y2="6" />
+                  <line x1="8" y1="12" x2="21" y2="12" />
+                  <line x1="8" y1="18" x2="21" y2="18" />
+                  <line x1="3" y1="6" x2="3.01" y2="6" />
+                  <line x1="3" y1="12" x2="3.01" y2="12" />
+                  <line x1="3" y1="18" x2="3.01" y2="18" />
+                </svg>
+                {subExpandida ? 'ocultar' : `sub-tarefas${subtarefas.length > 0 ? ` (${subtarefas.length})` : ''}`}
+              </button>
             </div>
+
+            {/* Painel de sub-tarefas */}
+            {subExpandida && (
+              <div className="mt-3 pl-2 border-l-2 border-bd-dim space-y-1 animate-slide-down">
+                {carregandoSubs && (
+                  <p className="text-[10px] text-tx-5">carregando...</p>
+                )}
+                {subtarefas.map(sub => (
+                  <div key={sub.id} className="flex items-center gap-2 group/sub">
+                    <button
+                      onClick={() => alternarSub(sub.id, sub.concluida)}
+                      className="flex-shrink-0 cursor-pointer"
+                    >
+                      <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${sub.concluida ? 'bg-accent border-accent' : 'border-bd-hi hover:border-accent'}`}>
+                        {sub.concluida && (
+                          <svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M2 6l3 3 5-5" />
+                          </svg>
+                        )}
+                      </div>
+                    </button>
+                    <span className={`flex-1 text-[11px] leading-relaxed ${sub.concluida ? 'line-through text-tx-5' : 'text-tx-3'}`}>
+                      {sub.descricao}
+                    </span>
+                    <button
+                      onClick={() => excluirSub(sub.id)}
+                      className="opacity-0 group-hover/sub:opacity-100 transition-opacity text-tx-5 hover:text-red-400 cursor-pointer"
+                    >
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 6L6 18M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+                <form
+                  onSubmit={e => { e.preventDefault(); adicionar(novaSubtarefa); setNovaSubtarefa('') }}
+                  className="flex items-center gap-1.5 mt-1.5"
+                >
+                  <input
+                    value={novaSubtarefa}
+                    onChange={e => setNovaSubtarefa(e.target.value)}
+                    placeholder="adicionar sub-tarefa..."
+                    className="flex-1 bg-transparent text-[11px] text-tx-3 placeholder:text-tx-5 outline-none border-b border-bd-dim focus:border-accent transition-colors py-0.5"
+                  />
+                  {novaSubtarefa.trim() && (
+                    <button type="submit" className="text-[10px] text-accent hover:opacity-70 transition-opacity cursor-pointer">
+                      + add
+                    </button>
+                  )}
+                </form>
+              </div>
+            )}
           </div>
 
           {/* Ações (hover) */}

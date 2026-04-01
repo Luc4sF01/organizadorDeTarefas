@@ -18,6 +18,14 @@ export interface Tarefa {
   concluida_em: string | null
 }
 
+export interface Subtarefa {
+  id: string
+  tarefa_id: string
+  descricao: string
+  concluida: boolean
+  created_at: string
+}
+
 export interface NovaTarefa {
   descricao: string
   categoria: Categoria
