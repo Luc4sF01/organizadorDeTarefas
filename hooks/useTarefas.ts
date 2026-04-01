@@ -39,11 +39,18 @@ export function useTarefas(mesAno: MesAno, categoria: Categoria) {
         .eq('mes', mesAno.mes)
         .eq('ano', mesAno.ano)
         .eq('categoria', categoria)
-        .order('ordem', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: true })
 
       if (error) throw error
-      setTarefas(data || [])
+
+      // Ordena por 'ordem' client-side quando disponível (campo opcional via migration)
+      const sorted = (data ?? []).sort((a, b) => {
+        if (a.ordem != null && b.ordem != null) return a.ordem - b.ordem
+        if (a.ordem != null) return -1
+        if (b.ordem != null) return 1
+        return 0
+      })
+      setTarefas(sorted)
     } catch (err) {
       setErro('Erro ao carregar tarefas. Tente novamente.')
       console.error(err)
@@ -61,25 +68,22 @@ export function useTarefas(mesAno: MesAno, categoria: Categoria) {
   ) => {
     if (!descricao.trim()) return
 
-    const nova: NovaTarefa = {
-      descricao: descricao.trim(),
-      categoria,
-      mes: mesAno.mes,
-      ano: mesAno.ano,
-      prioridade,
-      tags,
-      recorrente,
-    }
+    const base    = { descricao: descricao.trim(), categoria, mes: mesAno.mes, ano: mesAno.ano }
+    const completo = { ...base, prioridade, tags, recorrente }
 
     try {
-      const { data, error } = await supabase
-        .from('tarefas')
-        .insert([nova])
-        .select()
-        .single()
+      // Tenta com todos os campos (migration rodada)
+      let { data, error } = await supabase.from('tarefas').insert([completo]).select().single()
+
+      // Fallback: se coluna não existe (migration pendente), insere só o básico
+      if (error?.code === '42703' || error?.message?.includes('column')) {
+        const res = await supabase.from('tarefas').insert([base]).select().single()
+        data  = res.data
+        error = res.error
+      }
 
       if (error) throw error
-      setTarefas(prev => [...prev, data])
+      setTarefas(prev => [...prev, data!])
     } catch (err) {
       setErro('Erro ao adicionar tarefa.')
       console.error(err)
@@ -100,32 +104,32 @@ export function useTarefas(mesAno: MesAno, categoria: Categoria) {
     ))
 
     try {
-      const { error } = await supabase
+      let { error } = await supabase
         .from('tarefas')
-        .update({
-          concluida: novoEstado,
-          concluida_em: novoEstado ? agora : null,
-        })
+        .update({ concluida: novoEstado, concluida_em: novoEstado ? agora : null })
         .eq('id', id)
+
+      // Fallback sem concluida_em se a coluna ainda não existe
+      if (error?.code === '42703' || error?.message?.includes('column')) {
+        const res = await supabase.from('tarefas').update({ concluida: novoEstado }).eq('id', id)
+        error = res.error
+      }
 
       if (error) throw error
 
-      // Se tarefa recorrente foi concluída, cria cópia no próximo mês
+      // Recorrente: cria cópia no próximo mês ao concluir
       if (novoEstado && tarefa.recorrente) {
         const proximoMes = tarefa.mes === 12
           ? { mes: 1, ano: tarefa.ano + 1 }
           : { mes: tarefa.mes + 1, ano: tarefa.ano }
 
-        await supabase.from('tarefas').insert([{
-          descricao: tarefa.descricao,
-          categoria: tarefa.categoria,
-          prioridade: tarefa.prioridade,
-          tags: tarefa.tags,
-          recorrente: true,
-          nota: tarefa.nota,
-          mes: proximoMes.mes,
-          ano: proximoMes.ano,
-        }])
+        const copiaBase = { descricao: tarefa.descricao, categoria: tarefa.categoria, mes: proximoMes.mes, ano: proximoMes.ano }
+        const copiaCompleta = { ...copiaBase, prioridade: tarefa.prioridade, tags: tarefa.tags, recorrente: true, nota: tarefa.nota }
+
+        const { error: errCopia } = await supabase.from('tarefas').insert([copiaCompleta])
+        if (errCopia?.code === '42703' || errCopia?.message?.includes('column')) {
+          await supabase.from('tarefas').insert([copiaBase])
+        }
       }
     } catch (err) {
       setTarefas(prev => prev.map(t => t.id === id ? { ...t, concluida, concluida_em: tarefa.concluida_em } : t))
