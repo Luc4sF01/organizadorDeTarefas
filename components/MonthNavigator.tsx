@@ -21,8 +21,8 @@ export default function MonthNavigator({ mesAno, onAnterior, onProximo }: MonthN
         aria-label="Mês anterior"
         className="
           w-8 h-8 flex items-center justify-center rounded-lg
-          border border-[#222222] text-[#52525b]
-          hover:border-[#3a3a3a] hover:text-[#a1a1aa] hover:bg-[#161616]
+          border border-bd text-tx-4
+          hover:border-bd-hi hover:text-tx hover:bg-hover
           transition-all duration-150 cursor-pointer
         "
       >
@@ -32,14 +32,12 @@ export default function MonthNavigator({ mesAno, onAnterior, onProximo }: MonthN
       </button>
 
       <div className="flex items-baseline gap-2.5">
-        <h2 className="text-xl font-semibold text-[#f5f5f5] tracking-tight">
+        <h2 className="text-xl font-semibold text-tx tracking-tight">
           {nomeMes}
         </h2>
-        <span className="text-sm text-[#3f3f46] font-normal">
-          {mesAno.ano}
-        </span>
+        <span className="text-sm text-tx-4 font-normal">{mesAno.ano}</span>
         {ehMesAtual && (
-          <span className="text-xs text-[#6366f1] font-medium px-1.5 py-0.5 rounded bg-[#6366f115]">
+          <span className="text-xs text-accent font-medium px-1.5 py-0.5 rounded bg-accent-sub">
             atual
           </span>
         )}
@@ -50,8 +48,8 @@ export default function MonthNavigator({ mesAno, onAnterior, onProximo }: MonthN
         aria-label="Próximo mês"
         className="
           w-8 h-8 flex items-center justify-center rounded-lg
-          border border-[#222222] text-[#52525b]
-          hover:border-[#3a3a3a] hover:text-[#a1a1aa] hover:bg-[#161616]
+          border border-bd text-tx-4
+          hover:border-bd-hi hover:text-tx hover:bg-hover
           transition-all duration-150 cursor-pointer
         "
       >
