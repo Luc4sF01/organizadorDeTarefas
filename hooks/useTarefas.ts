@@ -75,11 +75,15 @@ export function useTarefas(mesAno: MesAno, categoria: Categoria) {
       // Tenta com todos os campos (migration rodada)
       let { data, error } = await supabase.from('tarefas').insert([completo]).select().single()
 
-      // Fallback: se coluna não existe (migration pendente), insere só o básico
-      if (error?.code === '42703' || error?.message?.includes('column')) {
-        const res = await supabase.from('tarefas').insert([base]).select().single()
-        data  = res.data
-        error = res.error
+      // Fallback para qualquer erro de coluna inexistente (migration pendente)
+      if (error) {
+        const msg = error.message?.toLowerCase() ?? ''
+        const isColumnError = error.code === '42703' || msg.includes('column') || msg.includes('does not exist')
+        if (isColumnError) {
+          const res = await supabase.from('tarefas').insert([base]).select().single()
+          data  = res.data
+          error = res.error
+        }
       }
 
       if (error) throw error
