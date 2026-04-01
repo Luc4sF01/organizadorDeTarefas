@@ -15,7 +15,7 @@ const CONFIANCA_CONFIG = {
 
 export default function EstudosPage() {
   const [busca, setBusca] = useState('')
-  const { registros, carregando, registrar } = useEstudos(null, busca)
+  const { registros, carregando, registrar, editar, excluir } = useEstudos(null, busca)
   const { revisoes, concluir } = useRevisoesHoje()
   const { streak, horasSemana, totalRegistros, carregando: carregandoDash } = useDashboardEstudos()
 
@@ -175,7 +175,9 @@ export default function EstudosPage() {
           <p className="text-sm text-tx-5 text-center py-8">Nenhum registro encontrado.</p>
         ) : (
           <ul className="space-y-2">
-            {registros.map(r => <RegistroItem key={r.id} registro={r} />)}
+            {registros.map(r => (
+              <RegistroItem key={r.id} registro={r} onEditar={editar} onExcluir={excluir} />
+            ))}
           </ul>
         )}
 
@@ -193,41 +195,149 @@ function DashCard({ valor, label, destaque }: { valor: string; label: string; de
   )
 }
 
-function RegistroItem({ registro }: { registro: RegistroEstudo }) {
+function RegistroItem({
+  registro,
+  onEditar,
+  onExcluir,
+}: {
+  registro: RegistroEstudo
+  onEditar: (id: string, campos: Partial<Pick<RegistroEstudo, 'titulo' | 'duracao_minutos' | 'confianca' | 'anotacao'>>) => void
+  onExcluir: (id: string) => void
+}) {
   const [expandido, setExpandido] = useState(false)
+  const [editando, setEditando] = useState(false)
+  const [form, setForm] = useState({
+    titulo: registro.titulo,
+    duracao_minutos: String(registro.duracao_minutos),
+    confianca: registro.confianca,
+    anotacao: registro.anotacao ?? '',
+  })
+
   const cfg = CONFIANCA_CONFIG[registro.confianca]
   const horas = registro.duracao_minutos >= 60
     ? `${Math.floor(registro.duracao_minutos / 60)}h${registro.duracao_minutos % 60 > 0 ? `${registro.duracao_minutos % 60}m` : ''}`
     : `${registro.duracao_minutos}min`
-
   const data = new Date(registro.estudado_em + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 
-  return (
-    <li className="bg-surface border border-bd rounded-xl px-4 py-3 list-item-in">
-      <p className="text-sm text-tx leading-snug">{registro.titulo}</p>
-      <div className="flex items-center gap-2 mt-1 flex-wrap">
-        <span className="text-[10px] text-tx-5">{data}</span>
-        <span className="text-[10px] text-tx-4">{horas}</span>
-        <span
-          className="text-[10px] px-1.5 py-0.5 rounded font-medium"
-          style={{ color: cfg.cor, backgroundColor: cfg.bg }}
-        >
-          {cfg.label}
-        </span>
-        {registro.anotacao && (
+  const salvarEdicao = () => {
+    onEditar(registro.id, {
+      titulo: form.titulo.trim(),
+      duracao_minutos: Number(form.duracao_minutos),
+      confianca: form.confianca,
+      anotacao: form.anotacao || null,
+    })
+    setEditando(false)
+  }
+
+  if (editando) {
+    return (
+      <li className="bg-surface border border-accent/40 rounded-xl px-4 py-3 list-item-in space-y-2">
+        <input
+          value={form.titulo}
+          onChange={e => setForm(f => ({ ...f, titulo: e.target.value }))}
+          className="w-full bg-transparent text-sm text-tx outline-none border-b border-bd-hi focus:border-accent transition-colors pb-1"
+        />
+        <input
+          type="number"
+          min="1"
+          value={form.duracao_minutos}
+          onChange={e => setForm(f => ({ ...f, duracao_minutos: e.target.value }))}
+          className="w-full bg-bg border border-bd rounded-lg px-2.5 py-1.5 text-xs text-tx outline-none focus:border-accent transition-colors"
+        />
+        <div className="flex gap-2">
+          {([1, 2, 3] as const).map(n => {
+            const c = CONFIANCA_CONFIG[n]
+            const ativo = form.confianca === n
+            return (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setForm(f => ({ ...f, confianca: n }))}
+                className="flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer"
+                style={ativo
+                  ? { borderColor: c.cor, color: c.cor, backgroundColor: c.bg }
+                  : { borderColor: 'var(--border)', color: 'var(--tx-4)' }
+                }
+              >
+                {c.label}
+              </button>
+            )
+          })}
+        </div>
+        <textarea
+          value={form.anotacao}
+          onChange={e => setForm(f => ({ ...f, anotacao: e.target.value }))}
+          placeholder="Anotação (opcional)"
+          rows={2}
+          className="w-full bg-transparent text-xs text-tx-3 placeholder:text-tx-5 outline-none border border-bd rounded-lg px-3 py-2 focus:border-accent transition-colors resize-none"
+        />
+        <div className="flex gap-2">
           <button
-            onClick={() => setExpandido(v => !v)}
-            className="text-[10px] text-tx-5 hover:text-tx-3 transition-colors cursor-pointer"
+            onClick={salvarEdicao}
+            className="flex-1 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:opacity-90 transition-opacity cursor-pointer"
           >
-            {expandido ? 'ocultar nota' : 'ver nota'}
+            Salvar
           </button>
-        )}
+          <button
+            onClick={() => setEditando(false)}
+            className="flex-1 py-1.5 rounded-lg border border-bd text-tx-4 text-xs hover:border-bd-hi transition-colors cursor-pointer"
+          >
+            Cancelar
+          </button>
+        </div>
+      </li>
+    )
+  }
+
+  return (
+    <li className="group bg-surface border border-bd rounded-xl px-4 py-3 list-item-in">
+      <div className="flex items-start gap-2">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm text-tx leading-snug">{registro.titulo}</p>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            <span className="text-[10px] text-tx-5">{data}</span>
+            <span className="text-[10px] text-tx-4">{horas}</span>
+            <span
+              className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+              style={{ color: cfg.cor, backgroundColor: cfg.bg }}
+            >
+              {cfg.label}
+            </span>
+            {registro.anotacao && (
+              <button
+                onClick={() => setExpandido(v => !v)}
+                className="text-[10px] text-tx-5 hover:text-tx-3 transition-colors cursor-pointer"
+              >
+                {expandido ? 'ocultar nota' : 'ver nota'}
+              </button>
+            )}
+          </div>
+          {expandido && registro.anotacao && (
+            <p className="mt-2 text-xs text-tx-3 leading-relaxed border-l-2 border-bd-hi pl-2 animate-slide-down">
+              {registro.anotacao}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+          <button
+            onClick={() => setEditando(true)}
+            className="w-6 h-6 flex items-center justify-center rounded-md text-tx-5 hover:text-tx-2 hover:bg-hover transition-all cursor-pointer"
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </button>
+          <button
+            onClick={() => onExcluir(registro.id)}
+            className="w-6 h-6 flex items-center justify-center rounded-md text-tx-5 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
       </div>
-      {expandido && registro.anotacao && (
-        <p className="mt-2 text-xs text-tx-3 leading-relaxed border-l-2 border-bd-hi pl-2 animate-slide-down">
-          {registro.anotacao}
-        </p>
-      )}
     </li>
   )
 }

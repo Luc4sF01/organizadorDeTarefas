@@ -59,5 +59,18 @@ export function useEstudos(filtroCategoria: string | null, busca: string) {
     return true
   }, [])
 
-  return { registros, carregando, registrar }
+  const editar = useCallback(async (
+    id: string,
+    campos: Partial<Pick<RegistroEstudo, 'titulo' | 'duracao_minutos' | 'confianca' | 'anotacao'>>
+  ) => {
+    setRegistros(prev => prev.map(r => r.id === id ? { ...r, ...campos } : r))
+    await supabase.from('registros_estudo').update(campos).eq('id', id)
+  }, [])
+
+  const excluir = useCallback(async (id: string) => {
+    setRegistros(prev => prev.filter(r => r.id !== id))
+    await supabase.from('registros_estudo').delete().eq('id', id)
+  }, [])
+
+  return { registros, carregando, registrar, editar, excluir }
 }
