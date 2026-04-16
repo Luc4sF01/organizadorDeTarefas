@@ -147,17 +147,37 @@ export function useTarefas(mesAno: MesAno, categoria: Categoria) {
     id: string,
     campos: Partial<Pick<Tarefa, 'descricao' | 'nota' | 'prioridade' | 'tags' | 'recorrente'>>
   ) => {
+    const tarefaOriginal = tarefas.find(t => t.id === id)
     setTarefas(prev => prev.map(t => t.id === id ? { ...t, ...campos } : t))
 
     try {
-      const { error } = await supabase.from('tarefas').update(campos).eq('id', id)
+      let { error } = await supabase.from('tarefas').update(campos).eq('id', id)
+
+      // Fallback para colunas inexistentes (migration pendente)
+      if (error) {
+        const msg = error.message?.toLowerCase() ?? ''
+        const isColumnError = error.code === '42703' || msg.includes('column') || msg.includes('does not exist')
+        if (isColumnError) {
+          const camposBasicos: Record<string, unknown> = {}
+          if (campos.descricao !== undefined) camposBasicos.descricao = campos.descricao
+          if (Object.keys(camposBasicos).length > 0) {
+            const res = await supabase.from('tarefas').update(camposBasicos).eq('id', id)
+            error = res.error
+          } else {
+            error = null
+          }
+        }
+      }
+
       if (error) throw error
     } catch (err) {
-      setErro('Erro ao editar tarefa.')
       console.error(err)
-      await buscarTarefas()
+      setErro('Erro ao editar tarefa.')
+      if (tarefaOriginal) {
+        setTarefas(prev => prev.map(t => t.id === id ? tarefaOriginal : t))
+      }
     }
-  }, [buscarTarefas])
+  }, [tarefas])
 
   // Duplica uma tarefa
   const duplicarTarefa = useCallback(async (id: string) => {

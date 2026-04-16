@@ -118,34 +118,30 @@ export default function Dashboard({ mesAno, onFechar }: DashboardProps) {
 
           {/* Gráfico de barras — últimos 6 meses */}
           <div className="p-4 rounded-xl bg-surface border border-bd">
-            <p className="text-xs text-tx-4 font-medium uppercase tracking-wide mb-4">Últimos 6 meses</p>
-            <div className="flex items-end justify-between gap-2 h-24">
-              {chart.map((bar, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="w-full flex flex-col justify-end gap-0.5" style={{ height: '80px' }}>
-                    {/* Barra total (fundo) */}
-                    <div
-                      className="w-full rounded-t-sm bg-bd transition-all duration-500"
-                      style={{ height: `${Math.round((bar.total / maxBarra) * 80)}px`, minHeight: bar.total > 0 ? '4px' : '0' }}
-                    />
-                  </div>
-                  {/* Sobreposição das concluídas — reimplementado como barra absoluta */}
-                  <span className="text-[10px] text-tx-4">{bar.label}</span>
-                </div>
-              ))}
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs text-tx-4 font-medium uppercase tracking-wide">Últimos 6 meses</p>
+              <div className="flex items-center gap-3 text-[10px] text-tx-5">
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-bd inline-block" />total</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-accent inline-block" />concluídas</span>
+              </div>
             </div>
-            {/* Legenda alternativa: lista */}
-            <div className="mt-3 flex flex-col gap-1">
+            <div className="flex items-end justify-between gap-2">
               {chart.map((bar, i) => (
-                <div key={i} className="flex items-center gap-2 text-xs">
-                  <span className="w-8 text-tx-4 flex-shrink-0">{bar.label}</span>
-                  <div className="flex-1 h-1.5 bg-bd rounded-full overflow-hidden">
+                <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
+                  <div className="relative w-full" style={{ height: '80px' }}>
+                    {/* Barra total (fundo cinza) */}
                     <div
-                      className="h-full bg-accent rounded-full transition-all duration-500"
-                      style={{ width: bar.total > 0 ? `${(bar.concluidas / bar.total) * 100}%` : '0%' }}
+                      className="absolute bottom-0 w-full rounded-t-sm bg-bd transition-all duration-500"
+                      style={{ height: bar.total > 0 ? `${Math.round((bar.total / maxBarra) * 80)}px` : '0px', minHeight: bar.total > 0 ? '4px' : '0' }}
+                    />
+                    {/* Barra concluídas (accent) */}
+                    <div
+                      className="absolute bottom-0 w-full rounded-t-sm bg-accent transition-all duration-700"
+                      style={{ height: bar.concluidas > 0 ? `${Math.round((bar.concluidas / maxBarra) * 80)}px` : '0px' }}
                     />
                   </div>
-                  <span className="text-tx-4 w-12 text-right">{bar.concluidas}/{bar.total}</span>
+                  <span className="text-[10px] text-tx-4">{bar.label}</span>
+                  <span className="text-[9px] text-tx-5 tabular-nums">{bar.concluidas}/{bar.total}</span>
                 </div>
               ))}
             </div>
